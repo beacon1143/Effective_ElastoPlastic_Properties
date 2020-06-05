@@ -105,16 +105,25 @@ namespace EFF_PROPS {
     const double dUxdx = loadValue * loadType[0];
     const double dUydy = loadValue * loadType[1];
     const double dUxdy = loadValue * loadType[2];
+
+    // initial conditions
     for (int i = 0; i < inp->nX + 1; i++) {
       for (int j = 0; j < inp->nY; j++) {
-        Ux[i][j] = Ux[i][j] + dUxdx * xUx[i][j] + dUxdy * yUx[i][j];
+        Ux[i][j] = dUxdx * xUx[i][j] + dUxdy * yUx[i][j];
       }
     }
     for (int i = 0; i < inp->nX; i++) {
       for (int j = 0; j < inp->nY + 1; j++) {
-        Uy[i][j] = Uy[i][j] + dUydy * yUy[i][j];
+        Uy[i][j] = dUydy * yUy[i][j];
       }
     }
+
+    SetMatrix(Vx, 0.0);
+    SetMatrix(Vy, 0.0);
+    SetMatrix(P, 0.0);
+    SetMatrix(tauXX, 0.0);
+    SetMatrix(tauYY, 0.0);
+    SetMatrix(tauXY, 0.0);
 
     for (size_t it = 0; it < inp->nTimeSteps; it++) {
       // displacement divergence

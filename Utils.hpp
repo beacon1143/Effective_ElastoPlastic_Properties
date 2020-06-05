@@ -28,6 +28,15 @@ namespace EFF_PROPS {
     return retValue;
   }
 
+  template <typename T>
+  void SetMatrix(std::vector<std::vector<T>>& matr, const T value = static_cast<T>(0)) {
+    for (auto& vec : matr) {
+      for (auto& el : vec) {
+        el = value;
+      }
+    }
+  }
+
 } // namespace
 
 #endif    // __UTILS_HPP__INCLUDED__
