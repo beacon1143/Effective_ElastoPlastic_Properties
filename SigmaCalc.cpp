@@ -3,7 +3,7 @@
 namespace EFF_PROPS {
 
   void SigmaCalc::SetMaterials() {
-    for (auto& vec : E) {
+    /*for (auto& vec : E) {
       for (auto& el : vec) {
         el = 1.0;
       }
@@ -12,10 +12,24 @@ namespace EFF_PROPS {
       for (auto& el : vec) {
         el = 0.25;
       }
+    }*/
+
+    for (int i = 0; i < inp->nX; i++) {
+      for (int j = 0; j < inp->nY; j++) {
+        if (sqrt(x[i][j] * x[i][j] + y[i][j] * y[i][j]) < 2.85459861019) {
+          E[i][j] = 2.0;
+          nu[i][j] = 0.2;
+        }
+        else {
+          E[i][j] = 0.002;
+          nu[i][j] = 0.3;
+        }
+      }
     }
+
     for (auto& vec : rho) {
       for (auto& el : vec) {
-        el = 1.0;
+        el = 2.0;
       }
     }
   }
@@ -206,9 +220,12 @@ namespace EFF_PROPS {
         }
       }
 
-      /*const double Vxmax = GetMaxElement(Vx);
-      const double Vymax = GetMaxElement(Vy);
-      std::cout << "Vxmax = " << Vxmax << "\nVymax = " << Vymax << "\n";*/
+      if (it % 100'000 == 0) {
+        std::cout << "Iteration " << it << " from " << inp->nTimeSteps << "\n";
+        const double Vxmax = GetMaxElement(Vx);
+        const double Vymax = GetMaxElement(Vy);
+        std::cout << "Vxmax = " << Vxmax << "\tVymax = " << Vymax << "\n";
+      }
 
       // displacement
       for (int i = 0; i < inp->nX + 1; i++) {
