@@ -18,14 +18,6 @@ namespace EFF_PROPS {
     double courant;         // Courant–Friedrichs–Lewy
 
     double dX, dY;          // space steps
-    double dT;              // time step
-    [[deprecated("only Nx, not Ny, is used in formula")]] double damp;            // damping factor
-
-    // material properties
-    double Kmax, Gmax, rho_max;
-    std::vector<std::vector<double>> E, nu, K, G, rho;
-    std::vector<std::vector<double>> Gav;
-    void SetMaterials();
 
     InputData() = delete;
     explicit InputData(const double size_x, const double size_y,

@@ -16,6 +16,16 @@ namespace EFF_PROPS {
     std::vector<std::vector<double>> xUx, yUx;
     std::vector<std::vector<double>> xUy, yUy;
 
+    // material properties
+    double Kmax, Gmax, rho_max;
+    std::vector<std::vector<double>> E, nu, K, G, rho;
+    std::vector<std::vector<double>> Gav;
+    void SetMaterials();
+
+    // numeric
+    double dT;              // time step
+    [[deprecated("only Nx, not Ny, is used in formula")]] double damp;            // damping factor
+
     // variables
     std::vector<std::vector<double>> Ux, Uy;                 // displacement
     std::vector<std::vector<double>> divU;                   // displacement divergence

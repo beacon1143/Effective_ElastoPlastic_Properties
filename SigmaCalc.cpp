@@ -2,6 +2,24 @@
 
 namespace EFF_PROPS {
 
+  void SigmaCalc::SetMaterials() {
+    for (auto& vec : E) {
+      for (auto& el : vec) {
+        el = 1.0;
+      }
+    }
+    for (auto& vec : nu) {
+      for (auto& el : vec) {
+        el = 0.25;
+      }
+    }
+    for (auto& vec : rho) {
+      for (auto& el : vec) {
+        el = 1.0;
+      }
+    }
+  }
+
   SigmaCalc::SigmaCalc(std::unique_ptr<InputData> inp_) {
     if (inp_ == nullptr) {
       throw std::runtime_error("Error! inp is nullptr!\n");
@@ -41,6 +59,39 @@ namespace EFF_PROPS {
         yUy[i][j] = -0.5 * (inp->sizeY + inp->dY) + inp->dY * j;
       }
     }
+
+    /* MATERIAL PROPERTIES */
+    ResizeXY(E, inp->nX, inp->nY);
+    ResizeXY(nu, inp->nX, inp->nY);
+    ResizeXY(rho, inp->nX, inp->nY);
+
+    SetMaterials();
+
+    K.resize(inp->nX);
+    G.resize(inp->nX);
+    for (int i = 0; i < inp->nX; i++) {
+      K[i].resize(inp->nY);
+      G[i].resize(inp->nY);
+      for (int j = 0; j < inp->nY; j++) {
+        K[i][j] = E[i][j] / (3.0 - 6.0 * nu[i][j]);
+        G[i][j] = E[i][j] / (2.0 + 2.0 * nu[i][j]);
+      }
+    }
+
+    ResizeXY(Gav, inp->nX - 1, inp->nY - 1);
+    AverageOverFourPoints(G, Gav);
+
+    Kmax = GetMaxElement(K);
+    Gmax = GetMaxElement(G);
+    rho_max = GetMaxElement(rho);
+
+    /*std::cout << "Gmax = " << Gmax << std::endl;
+    std::cout << "Kmax = " << Kmax << std::endl;*/
+
+    /* NUMERIC */
+    dT = inp->courant * std::min(inp->dX, inp->dY) / sqrt( (Kmax + 4.0 * Gmax / 3.0) / rho_max );
+    /*std::cout << "dT = " << dT << std::endl;*/
+    damp = 4.0 / dT / inp->nX;
 
     /* VARIABLES */
     // displacement
@@ -127,11 +178,11 @@ namespace EFF_PROPS {
       // constitutive equation - Hooke's law
       for (int i = 0; i < inp->nX; i++) {
         for (int j = 0; j < inp->nY; j++) {
-          P[i][j] = Pinit[i][j] - inp->K[i][j] * divU[i][j];
-          tauXX[i][j] = 2.0 * inp->G[i][j] * ( (Ux[i+1][j] - Ux[i][j]) / inp->dX - divU[i][j]/3.0);
-          tauYY[i][j] = 2.0 * inp->G[i][j] * ( (Uy[i][j+1] - Uy[i][j]) / inp->dY - divU[i][j]/3.0);
+          P[i][j] = Pinit[i][j] - K[i][j] * divU[i][j];
+          tauXX[i][j] = 2.0 * G[i][j] * ( (Ux[i+1][j] - Ux[i][j]) / inp->dX - divU[i][j]/3.0);
+          tauYY[i][j] = 2.0 * G[i][j] * ( (Uy[i][j+1] - Uy[i][j]) / inp->dY - divU[i][j]/3.0);
           if (i < inp->nX - 1 && j < inp->nY - 1) {
-            tauXY[i][j] = inp->Gav[i][j] * ( (Ux[i+1][j+1] - Ux[i+1][j]) / inp->dY + (Uy[i+1][j+1] - Uy[i][j+1]) / inp->dX );
+            tauXY[i][j] = Gav[i][j] * ( (Ux[i+1][j+1] - Ux[i+1][j]) / inp->dY + (Uy[i+1][j+1] - Uy[i][j+1]) / inp->dX );
           }
         }
       }
@@ -139,19 +190,19 @@ namespace EFF_PROPS {
       // motion equation
       for (int i = 1; i < inp->nX; i++) {
         for (int j = 1; j < inp->nY - 1; j++) {
-          Vx[i][j] = Vx[i][j] * (1.0 - inp->dT * inp->damp) + (
-                     (-P[i][j] + P[i-1][j] + tauXX[i][j] - tauXX[i-1][j]) / inp->dX / inp->rho_max +
+          Vx[i][j] = Vx[i][j] * (1.0 - dT * damp) + (
+                     (-P[i][j] + P[i-1][j] + tauXX[i][j] - tauXX[i-1][j]) / inp->dX / rho_max +
                      (tauXY[i-1][j] - tauXY[i-1][j-1]) / inp->dY
-                     ) * inp->dT;
+                     ) * dT;
         }
       }
 
       for (int i = 1; i < inp->nX - 1; i++) {
         for (int j = 1; j < inp->nY; j++) {
-          Vy[i][j] = Vy[i][j] * (1.0 - inp->dT * inp->damp) + (
-                     (-P[i][j] + P[i][j-1] + tauYY[i][j] - tauYY[i][j-1]) / inp->dY / inp->rho_max +
+          Vy[i][j] = Vy[i][j] * (1.0 - dT * damp) + (
+                     (-P[i][j] + P[i][j-1] + tauYY[i][j] - tauYY[i][j-1]) / inp->dY / rho_max +
                      (tauXY[i][j-1] - tauXY[i-1][j-1]) / inp->dX
-                     ) * inp->dT;
+                     ) * dT;
         }
       }
 
@@ -162,12 +213,12 @@ namespace EFF_PROPS {
       // displacement
       for (int i = 0; i < inp->nX + 1; i++) {
         for (int j = 0; j < inp->nY; j++) {
-          Ux[i][j] = Ux[i][j] + Vx[i][j] * inp->dT;
+          Ux[i][j] = Ux[i][j] + Vx[i][j] * dT;
         }
       }
       for (int i = 0; i < inp->nX; i++) {
         for (int j = 0; j < inp->nY + 1; j++) {
-          Uy[i][j] = Uy[i][j] + Vy[i][j] * inp->dT;
+          Uy[i][j] = Uy[i][j] + Vy[i][j] * dT;
         }
       }
     } // time loop
