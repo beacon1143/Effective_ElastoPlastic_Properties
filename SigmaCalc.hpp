@@ -5,36 +5,40 @@
 #include <memory>
 #include "InputData.hpp"
 
-class SigmaCalc {
-public:
-  std::unique_ptr<InputData> inp;
-  /*double loadValue;
-  std::array<int, 3> loadType;*/
+namespace EFF_PROPS {
 
-  // coordinates
-  std::vector<std::vector<double>> x, y;
-  std::vector<std::vector<double>> xUx, yUx;
-  std::vector<std::vector<double>> xUy, yUy;
+  class SigmaCalc {
+  public:
+    std::unique_ptr<InputData> inp;
+    /*double loadValue;
+    std::array<int, 3> loadType;*/
 
-  // variables
-  std::vector<std::vector<double>> Ux, Uy;                 // displacement
-  std::vector<std::vector<double>> divU;                   // displacement divergence
-  std::vector<std::vector<double>> Vx, Vy;                 // velocity
-  std::vector<std::vector<double>> Pinit, P;               // hydrostatic stress (ball part of tensor)
-  std::vector<std::vector<double>> tauXX, tauYY, tauXY;    // deviatoric stress
+    // coordinates
+    std::vector<std::vector<double>> x, y;
+    std::vector<std::vector<double>> xUx, yUx;
+    std::vector<std::vector<double>> xUy, yUy;
 
-  // effective stress
-  std::array<double, 3> Sigma;
+    // variables
+    std::vector<std::vector<double>> Ux, Uy;                 // displacement
+    std::vector<std::vector<double>> divU;                   // displacement divergence
+    std::vector<std::vector<double>> Vx, Vy;                 // velocity
+    std::vector<std::vector<double>> Pinit, P;               // hydrostatic stress (ball part of tensor)
+    std::vector<std::vector<double>> tauXX, tauYY, tauXY;    // deviatoric stress
 
-  void ComputeSigma(const double loadValue, const std::array<int, 3>& loadType);
+    // effective stress
+    std::array<double, 3> Sigma;
 
-  SigmaCalc() = delete;
-  explicit SigmaCalc(std::unique_ptr<InputData> inp_/*, const double loadValue_, const std::array<int, 3>& loadType_*/);
+    void ComputeSigma(const double loadValue, const std::array<int, 3>& loadType);
 
-private:
-  void ComputeDivergence(const std::vector<std::vector<double>>& Ax,
-                         const std::vector<std::vector<double>>& Ay,
-                         std::vector<std::vector<double>>& divA);
-};
+    SigmaCalc() = delete;
+    explicit SigmaCalc(std::unique_ptr<InputData> inp_/*, const double loadValue_, const std::array<int, 3>& loadType_*/);
+
+  private:
+    void ComputeDivergence(const std::vector<std::vector<double>>& Ax,
+                           const std::vector<std::vector<double>>& Ay,
+                           std::vector<std::vector<double>>& divA);
+  };
+
+} // namespace
 
 #endif    // __SIGMA_CALC_HPP__INCLUDED__
