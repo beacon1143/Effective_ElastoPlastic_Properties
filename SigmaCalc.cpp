@@ -131,7 +131,7 @@ namespace EFF_PROPS {
           tauXX[i][j] = 2.0 * inp->G[i][j] * ( (Ux[i+1][j] - Ux[i][j]) / inp->dX - divU[i][j]/3.0);
           tauYY[i][j] = 2.0 * inp->G[i][j] * ( (Uy[i][j+1] - Uy[i][j]) / inp->dY - divU[i][j]/3.0);
           if (i < inp->nX - 1 && j < inp->nY - 1) {
-            tauXY[i][j] = inp->Gmax * ( (Ux[i+1][j+1] - Ux[i+1][j]) / inp->dY + (Uy[i+1][j+1] - Uy[i][j+1]) / inp->dX );
+            tauXY[i][j] = inp->Gav[i][j] * ( (Ux[i+1][j+1] - Ux[i+1][j]) / inp->dY + (Uy[i+1][j+1] - Uy[i][j+1]) / inp->dX );
           }
         }
       }

@@ -69,6 +69,9 @@ namespace EFF_PROPS {
       }
     }
 
+    ResizeXY(Gav, nX - 1, nY - 1);
+    AverageOverFourPoints(G, Gav);
+
     Kmax = GetMaxElement(K);
     Gmax = GetMaxElement(G);
     rho_max = GetMaxElement(rho);

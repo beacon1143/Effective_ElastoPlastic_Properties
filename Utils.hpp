@@ -37,6 +37,40 @@ namespace EFF_PROPS {
     }
   }
 
+  template <typename T>
+  void AverageOverFourPoints(const std::vector<std::vector<T>>& init, std::vector<std::vector<T>>& aver) {
+    const size_t n1 = init.size();
+    if (n1 < 2) {
+      throw std::runtime_error("Error! First dimension of init is too small!\n");
+    }
+    const size_t n2 = init[0].size();
+    for (size_t i = 1; i < n1; i++) {
+      if (init[i].size() != n2) {
+        throw std::runtime_error("Error! Dimensions of init columns are not consistent!\n");
+      }
+    }
+
+    if (aver.size() != n1 - 1) {
+      throw std::runtime_error("Error! First dimension of aver is bad!\n");
+    }
+    for (size_t i = 2; i < n1 - 1; i++) {
+      if (aver[i].size() != n2 - 1) {
+        throw std::runtime_error("Error! Second dimension of aver is bad!\n");
+      }
+    }
+
+    for (size_t i = 0; i < n1 - 1; i++) {
+      for (size_t j = 0; j < n2 - 1; j++) {
+        aver[i][j] = init[i][j] + init[i+1][j] + init[i][j+1] + init[i+1][j+1];
+      }
+    }
+    for (auto& vec : aver) {
+      for (auto& el : vec) {
+        el *= 0.25;
+      }
+    }
+  }
+
 } // namespace
 
 #endif    // __UTILS_HPP__INCLUDED__
