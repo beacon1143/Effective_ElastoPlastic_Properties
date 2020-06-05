@@ -69,22 +69,9 @@ namespace EFF_PROPS {
       }
     }
 
-    Kmax = GetMaxElement(K); //std::numeric_limits<double>::min();
-    Gmax = GetMaxElement(G); //std::numeric_limits<double>::min();
-    rho_max = GetMaxElement(rho); //std::numeric_limits<double>::min();
-    /*for (int i = 0; i < nX; i++) {
-      for (int j = 0; j < nY; j++) {
-        if (K[i][j] > Kmax) {
-          Kmax = K[i][j];
-        }
-        if (G[i][j] > Gmax) {
-          Gmax = G[i][j];
-        }
-        if (rho[i][j] > rho_max) {
-          rho_max = rho[i][j];
-        }
-      }
-    }*/
+    Kmax = GetMaxElement(K);
+    Gmax = GetMaxElement(G);
+    rho_max = GetMaxElement(rho);
 
     /*std::cout << "Gmax = " << Gmax << std::endl;
     std::cout << "Kmax = " << Kmax << std::endl;*/
@@ -93,13 +80,5 @@ namespace EFF_PROPS {
     /*std::cout << "dT = " << dT << std::endl;*/
     damp = 4.0 / dT / nX;
   }
-
-  /*template<typename T>
-  static void InputData::ResizeXY(std::vector<std::vector<T>>& matr, const int n1, const int n2) {
-    matr.resize(n1);
-    for (auto& vec: matr) {
-      vec.resize(n2);
-    }
-  }*/
 
 } // namespace

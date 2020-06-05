@@ -2,16 +2,11 @@
 
 namespace EFF_PROPS {
 
-  SigmaCalc::SigmaCalc(std::unique_ptr<InputData> inp_/*, const double loadValue_, const std::array<int, 3>& loadType_*/) {
+  SigmaCalc::SigmaCalc(std::unique_ptr<InputData> inp_) {
     if (inp_ == nullptr) {
       throw std::runtime_error("Error! inp is nullptr!\n");
     }
     inp = std::move(inp_);
-    /*if (loadValue_ <= 0.0) {
-      throw std::runtime_error("Error! loadValue is not positive!\n");
-    }
-    loadValue = loadValue_;
-    loadType = loadType_;*/
 
     /* VARIABLES */
     x.resize(inp->nX);

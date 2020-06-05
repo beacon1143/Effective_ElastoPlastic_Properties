@@ -10,8 +10,6 @@ namespace EFF_PROPS {
   class SigmaCalc {
   public:
     std::unique_ptr<InputData> inp;
-    /*double loadValue;
-    std::array<int, 3> loadType;*/
 
     // coordinates
     std::vector<std::vector<double>> x, y;
@@ -31,7 +29,7 @@ namespace EFF_PROPS {
     void ComputeSigma(const double loadValue, const std::array<int, 3>& loadType);
 
     SigmaCalc() = delete;
-    explicit SigmaCalc(std::unique_ptr<InputData> inp_/*, const double loadValue_, const std::array<int, 3>& loadType_*/);
+    explicit SigmaCalc(std::unique_ptr<InputData> inp_);
 
   private:
     void ComputeDivergence(const std::vector<std::vector<double>>& Ax,
