@@ -14,6 +14,8 @@ namespace EFF_PROPS {
   public:
     double sizeX, sizeY;    // physical size
     int nX, nY;             // numbers of space steps
+    int nXp, nYp;
+    int nXm, nYm;
     long int nTimeSteps;
     double courant;         // Courant–Friedrichs–Lewy
 

@@ -44,7 +44,7 @@ namespace EFF_PROPS {
   private:
     void ComputeDivergence(const std::vector<std::vector<double>>& Ax,
                            const std::vector<std::vector<double>>& Ay,
-                           std::vector<std::vector<double>>& divA);
+                           std::vector<std::vector<double>>& divA) const;
   };
 
 } // namespace
