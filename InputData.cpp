@@ -4,7 +4,7 @@ namespace EFF_PROPS {
 
   InputData::InputData(const double sizeX_, const double sizeY_,
                        const int nX_, const int nY_,
-                       const long int nTimeSteps_, const double courant_) {
+                       const size_t nTimeSteps_, const size_t nIterations_, const double courant_) {
     if (sizeX_ <= 0.0) {
       throw std::runtime_error("Error! sizeX is not positive!\n");
     }
@@ -33,6 +33,10 @@ namespace EFF_PROPS {
       throw std::runtime_error("Error! nTimeSteps is not positive!\n");
     }
     nTimeSteps = nTimeSteps_;
+    if (nIterations_ <= 0) {
+      throw std::runtime_error("Error! nIterations is not positive!\n");
+    }
+    nIterations = nIterations_;
 
     if (courant_ <= 0.0) {
       throw std::runtime_error("Error! courant is not positive!\n");

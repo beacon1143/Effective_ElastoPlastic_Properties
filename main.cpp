@@ -6,39 +6,61 @@ using namespace EFF_PROPS;
 
 int main() {
   try {
-    auto input = std::make_unique<InputData>(16.0, 16.0, 100, 100, 4'000'000, 0.125);
-    SigmaCalc sigma_calc(std::move(input));
-    const double load_value = 0.002;
-
     const auto start = std::chrono::system_clock::now();
 
+    constexpr size_t nTimeSteps = 4;
+    auto input = std::make_unique<InputData>(10.0, 10.0, 100, 100, nTimeSteps, 1'000, 0.5);
+    SigmaCalc sigma_calc(std::move(input));
+    constexpr double load_value = 0.002;
+
+    std::vector<double> C_1111(nTimeSteps),C_1122(nTimeSteps), C_1112(nTimeSteps),
+                        C_2222(nTimeSteps), C_1222(nTimeSteps), C_1212(nTimeSteps);
+
     sigma_calc.ComputeSigma(load_value, {1, 0, 0});
-    const double C_1111 = sigma_calc.Sigma[0] / load_value;
-    const double C_1122 = sigma_calc.Sigma[1] / load_value;
-    const double C_1112 = sigma_calc.Sigma[2] / load_value;
+    for (size_t tim = 0; tim < nTimeSteps; tim++) {
+      C_1111[tim] = sigma_calc.Sigma[tim][0] / load_value / static_cast<double>(tim + 1) * nTimeSteps;
+      C_1122[tim] = sigma_calc.Sigma[tim][1] / load_value / static_cast<double>(tim + 1) * nTimeSteps;
+      C_1112[tim] = sigma_calc.Sigma[tim][2] / load_value / static_cast<double>(tim + 1) * nTimeSteps;
+    }
 
     sigma_calc.ComputeSigma(load_value, {0, 1, 0});
-    const double C_2222 = sigma_calc.Sigma[1] / load_value;
-    const double C_1222 = sigma_calc.Sigma[2] / load_value;
+    for (size_t tim = 0; tim < nTimeSteps; tim++) {
+      C_2222[tim] = sigma_calc.Sigma[tim][1] / load_value / static_cast<double>(tim + 1) * nTimeSteps;
+      C_1222[tim] = sigma_calc.Sigma[tim][2] / load_value / static_cast<double>(tim + 1) * nTimeSteps;
+    }
 
     sigma_calc.ComputeSigma(load_value, {0, 0, 1});
-    const double C_1212 = sigma_calc.Sigma[2] / load_value;
+    for (size_t tim = 0; tim < nTimeSteps; tim++) {
+      C_1212[tim] = sigma_calc.Sigma[tim][2] / load_value / static_cast<double>(tim + 1) * nTimeSteps;
+    }
 
     const auto end = std::chrono::system_clock::now();
 
-    std::cout << "C_1111 = " << C_1111 << std::endl;
-    std::cout << "C_1122 = " << C_1122 << std::endl;
-    std::cout << "C_1112 = " << C_1112 << std::endl;
-    std::cout << "C_2222 = " << C_2222 << std::endl;
-    std::cout << "C_1222 = " << C_1222 << std::endl;
-    std::cout << "C_1212 = " << C_1212 << std::endl;
+    std::cout << std::endl;
+
+    for (size_t tim = 0; tim < nTimeSteps; tim++) {
+      std::cout << "Time step " << tim + 1 << " from " << nTimeSteps << '\n';
+      std::cout << "C_1111 = " << C_1111[tim] << '\n';
+      std::cout << "C_1122 = " << C_1122[tim] << '\n';
+      std::cout << "C_1112 = " << C_1112[tim] << '\n';
+      std::cout << "C_2222 = " << C_2222[tim] << '\n';
+      std::cout << "C_1222 = " << C_1222[tim] << '\n';
+      std::cout << "C_1212 = " << C_1212[tim] << '\n';
+      std::cout << std::endl;
+    }
 
     const int elapsed_sec = static_cast<int>( std::chrono::duration_cast<std::chrono::seconds>(end - start).count() );
     if (elapsed_sec < 60) {
       std::cout << "Calculation time is " << elapsed_sec << " sec\n";
     }
     else {
-      std::cout << "Calculation time is " << elapsed_sec / 60 << " min " << elapsed_sec % 60 << " sec\n";
+      const int elapsed_min = elapsed_sec / 60;
+      if (elapsed_min < 60) {
+        std::cout << "Calculation time is " << elapsed_min << " min " << elapsed_sec % 60 << " sec\n";
+      }
+      else {
+        std::cout << "Calculation time is " << elapsed_min / 60 << " hours " << elapsed_min % 60 << " min " << elapsed_sec % 60 << " sec\n";
+      }
     }
 
     return 0;

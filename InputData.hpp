@@ -16,7 +16,8 @@ namespace EFF_PROPS {
     int nX, nY;             // numbers of space steps
     int nXp, nYp;
     int nXm, nYm;
-    long int nTimeSteps;
+    size_t nTimeSteps;
+    size_t nIterations;
     double courant;         // Courant–Friedrichs–Lewy
 
     double dX, dY;          // space steps
@@ -24,7 +25,7 @@ namespace EFF_PROPS {
     InputData() = delete;
     explicit InputData(const double size_x, const double size_y,
                        const int nX, const int nY,
-                       const long int nTimeSteps, const double courant);
+                       const size_t nTimeSteps, const size_t nIterations, const double courant);
   private:
   };
 

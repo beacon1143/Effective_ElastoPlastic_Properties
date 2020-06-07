@@ -3,7 +3,7 @@
 namespace EFF_PROPS {
 
   void SigmaCalc::SetMaterials() {
-    /*for (auto& vec : E) {
+    for (auto& vec : E) {
       for (auto& el : vec) {
         el = 1.0;
       }
@@ -12,9 +12,9 @@ namespace EFF_PROPS {
       for (auto& el : vec) {
         el = 0.25;
       }
-    }*/
+    }
 
-    for (int i = 0; i < inp->nX; i++) {
+    /*for (int i = 0; i < inp->nX; i++) {
       for (int j = 0; j < inp->nY; j++) {
         if (sqrt(x[i][j] * x[i][j] + y[i][j] * y[i][j]) < 2.85459861019) {
           E[i][j] = 2.0;
@@ -25,7 +25,7 @@ namespace EFF_PROPS {
           nu[i][j] = 0.3;
         }
       }
-    }
+    }*/
 
     for (auto& vec : rho) {
       for (auto& el : vec) {
@@ -158,6 +158,7 @@ namespace EFF_PROPS {
       vec.resize(inp->nY - 1, 0.0);
     }
 
+    Sigma.resize(inp->nTimeSteps);
   }
 
   void SigmaCalc::ComputeSigma(const double loadValue, const std::array<int, 3>& loadType) {
@@ -166,15 +167,14 @@ namespace EFF_PROPS {
     const double dUydy = loadValue * loadType[1];
     const double dUxdy = loadValue * loadType[2];
 
-    // initial conditions
     for (int i = 0; i < inp->nX + 1; i++) {
       for (int j = 0; j < inp->nY; j++) {
-        Ux[i][j] = dUxdx * xUx[i][j] + dUxdy * yUx[i][j];
+        Ux[i][j] = 0.0; //dUxdx * xUx[i][j] + dUxdy * yUx[i][j];
       }
     }
     for (int i = 0; i < inp->nX; i++) {
       for (int j = 0; j < inp->nY + 1; j++) {
-        Uy[i][j] = dUydy * yUy[i][j];
+        Uy[i][j] = 0.0; //dUydy * yUy[i][j];
       }
     }
 
@@ -185,104 +185,118 @@ namespace EFF_PROPS {
     SetMatrix(tauYY, 0.0);
     SetMatrix(tauXY, 0.0);
 
-    for (size_t it = 0; it < inp->nTimeSteps; it++) {
-      // displacement divergence
-      ComputeDivergence(Ux, Uy, divU);
+    for (size_t tim = 0; tim < inp->nTimeSteps; tim++) {
+      // initial conditions
+      for (int i = 0; i < inp->nX + 1; i++) {
+        for (int j = 0; j < inp->nY; j++) {
+          Ux[i][j] += (dUxdx * xUx[i][j] + dUxdy * yUx[i][j]) / inp->nTimeSteps;
+        }
+      }
+      for (int i = 0; i < inp->nX; i++) {
+        for (int j = 0; j < inp->nY + 1; j++) {
+          Uy[i][j] += (dUydy * yUy[i][j]) / inp->nTimeSteps;
+        }
+      }
 
-      // constitutive equation - Hooke's law
-#pragma omp parallel for
+      for (size_t it = 0; it < inp->nIterations; it++) {
+        // displacement divergence
+        ComputeDivergence(Ux, Uy, divU);
+
+        // constitutive equation - Hooke's law
+  #pragma omp parallel for
+        for (int i = 0; i < inp->nX; i++) {
+          for (int j = 0; j < inp->nY; j++) {
+            P[i][j] = Pinit[i][j] - K[i][j] * divU[i][j];
+            tauXX[i][j] = 2.0 * G[i][j] * ( (Ux[i+1][j] - Ux[i][j]) / inp->dX - divU[i][j]/3.0);
+            tauYY[i][j] = 2.0 * G[i][j] * ( (Uy[i][j+1] - Uy[i][j]) / inp->dY - divU[i][j]/3.0);
+          }
+        }
+
+  #pragma omp parallel for
+        for (int i = 0; i < inp->nXm; i++) {
+          for (int j = 0; j < inp->nYm; j++) {
+            tauXY[i][j] = Gav[i][j] * ( (Ux[i+1][j+1] - Ux[i+1][j]) / inp->dY + (Uy[i+1][j+1] - Uy[i][j+1]) / inp->dX );
+          }
+        }
+
+        // motion equation
+  #pragma omp parallel for
+        for (int i = 1; i < inp->nX; i++) {
+          for (int j = 1; j < inp->nYm; j++) {
+            Vx[i][j] = Vx[i][j] * (1.0 - dT * damp) + (
+                       (-P[i][j] + P[i-1][j] + tauXX[i][j] - tauXX[i-1][j]) / inp->dX / rho_max +
+                       (tauXY[i-1][j] - tauXY[i-1][j-1]) / inp->dY
+                       ) * dT;
+          }
+        }
+
+  #pragma omp parallel for
+        for (int i = 1; i < inp->nXm; i++) {
+          for (int j = 1; j < inp->nY; j++) {
+            Vy[i][j] = Vy[i][j] * (1.0 - dT * damp) + (
+                       (-P[i][j] + P[i][j-1] + tauYY[i][j] - tauYY[i][j-1]) / inp->dY / rho_max +
+                       (tauXY[i][j-1] - tauXY[i-1][j-1]) / inp->dX
+                       ) * dT;
+          }
+        }
+
+        if ((it+1) % 1'000 == 0) {
+          std::cout << "Iteration " << it + 1 << " from " << inp->nIterations << "\n";
+          const double Vxmax = GetMaxElement(Vx);
+          const double Vymax = GetMaxElement(Vy);
+          std::cout << "Vxmax = " << Vxmax << "\tVymax = " << Vymax << "\n";
+        }
+
+        // displacement
+  #pragma omp parallel for
+        for (int i = 0; i < inp->nXp; i++) {
+          for (int j = 0; j < inp->nY; j++) {
+            Ux[i][j] = Ux[i][j] + Vx[i][j] * dT;
+          }
+        }
+  #pragma omp parallel for
+        for (int i = 0; i < inp->nX; i++) {
+          for (int j = 0; j < inp->nYp; j++) {
+            Uy[i][j] = Uy[i][j] + Vy[i][j] * dT;
+          }
+        }
+      } // for (it)
+
+      /*std::cout << "tauYY\n";
       for (int i = 0; i < inp->nX; i++) {
         for (int j = 0; j < inp->nY; j++) {
-          P[i][j] = Pinit[i][j] - K[i][j] * divU[i][j];
-          tauXX[i][j] = 2.0 * G[i][j] * ( (Ux[i+1][j] - Ux[i][j]) / inp->dX - divU[i][j]/3.0);
-          tauYY[i][j] = 2.0 * G[i][j] * ( (Uy[i][j+1] - Uy[i][j]) / inp->dY - divU[i][j]/3.0);
+          std::cout << tauYY[i][j] << ' ';
         }
-      }
+        std::cout << '\n';
+      }*/
 
-#pragma omp parallel for
-      for (int i = 0; i < inp->nXm; i++) {
-        for (int j = 0; j < inp->nYm; j++) {
-          tauXY[i][j] = Gav[i][j] * ( (Ux[i+1][j+1] - Ux[i+1][j]) / inp->dY + (Uy[i+1][j+1] - Uy[i][j+1]) / inp->dX );
-        }
-      }
-
-      // motion equation
-#pragma omp parallel for
-      for (int i = 1; i < inp->nX; i++) {
-        for (int j = 1; j < inp->nYm; j++) {
-          Vx[i][j] = Vx[i][j] * (1.0 - dT * damp) + (
-                     (-P[i][j] + P[i-1][j] + tauXX[i][j] - tauXX[i-1][j]) / inp->dX / rho_max +
-                     (tauXY[i-1][j] - tauXY[i-1][j-1]) / inp->dY
-                     ) * dT;
-        }
-      }
-
-#pragma omp parallel for
-      for (int i = 1; i < inp->nXm; i++) {
-        for (int j = 1; j < inp->nY; j++) {
-          Vy[i][j] = Vy[i][j] * (1.0 - dT * damp) + (
-                     (-P[i][j] + P[i][j-1] + tauYY[i][j] - tauYY[i][j-1]) / inp->dY / rho_max +
-                     (tauXY[i][j-1] - tauXY[i-1][j-1]) / inp->dX
-                     ) * dT;
-        }
-      }
-
-      if (it % 100'000 == 0) {
-        std::cout << "Iteration " << it << " from " << inp->nTimeSteps << "\n";
-        const double Vxmax = GetMaxElement(Vx);
-        const double Vymax = GetMaxElement(Vy);
-        std::cout << "Vxmax = " << Vxmax << "\tVymax = " << Vymax << "\n";
-      }
-
-      // displacement
-#pragma omp parallel for
-      for (int i = 0; i < inp->nXp; i++) {
-        for (int j = 0; j < inp->nY; j++) {
-          Ux[i][j] = Ux[i][j] + Vx[i][j] * dT;
-        }
-      }
-#pragma omp parallel for
+      // averaging
+      Sigma[tim][0] = 0.0;
       for (int i = 0; i < inp->nX; i++) {
-        for (int j = 0; j < inp->nYp; j++) {
-          Uy[i][j] = Uy[i][j] + Vy[i][j] * dT;
+        for (int j = 0; j < inp->nY; j++) {
+          Sigma[tim][0] += tauXX[i][j] - P[i][j];
         }
       }
-    } // time loop
+      Sigma[tim][0] /= static_cast<double>(inp->nX * inp->nY);
 
-    /*std::cout << "tauYY\n";
-    for (int i = 0; i < inp->nX; i++) {
-      for (int j = 0; j < inp->nY; j++) {
-        std::cout << tauYY[i][j] << ' ';
+      Sigma[tim][1] = 0.0;
+      for (int i = 0; i < inp->nX; i++) {
+        for (int j = 0; j < inp->nY; j++) {
+          Sigma[tim][1] += tauYY[i][j] - P[i][j];
+        }
       }
-      std::cout << '\n';
-    }*/
+      Sigma[tim][1] /= static_cast<double>(inp->nX * inp->nY);
 
-    // averaging
-    Sigma[0] = 0.0;
-    for (int i = 0; i < inp->nX; i++) {
-      for (int j = 0; j < inp->nY; j++) {
-        Sigma[0] += tauXX[i][j] - P[i][j];
+      Sigma[tim][2] = 0.0;
+      for (int i = 0; i < inp->nX - 1; i++) {
+        for (int j = 0; j < inp->nY - 1; j++) {
+          Sigma[tim][2] += tauXY[i][j];
+        }
       }
-    }
-    Sigma[0] /= static_cast<double>(inp->nX * inp->nY);
+      Sigma[tim][2] /= static_cast<double>((inp->nX - 1) * (inp->nY - 1));
 
-    Sigma[1] = 0.0;
-    for (int i = 0; i < inp->nX; i++) {
-      for (int j = 0; j < inp->nY; j++) {
-        Sigma[1] += tauYY[i][j] - P[i][j];
-      }
-    }
-    Sigma[1] /= static_cast<double>(inp->nX * inp->nY);
-
-    Sigma[2] = 0.0;
-    for (int i = 0; i < inp->nX - 1; i++) {
-      for (int j = 0; j < inp->nY - 1; j++) {
-        Sigma[2] += tauXY[i][j];
-      }
-    }
-    Sigma[2] /= static_cast<double>((inp->nX - 1) * (inp->nY - 1));
-
-    /*std::cout << "Sigma\n" << Sigma[0] << ' ' << Sigma[1] << ' ' << Sigma[2] << '\n';*/
+      /*std::cout << "Sigma\n" << Sigma[0] << ' ' << Sigma[1] << ' ' << Sigma[2] << '\n';*/
+    } // for (tim)
   }
 
 

@@ -34,7 +34,7 @@ namespace EFF_PROPS {
     std::vector<std::vector<double>> tauXX, tauYY, tauXY;    // deviatoric stress
 
     // effective stress
-    std::array<double, 3> Sigma;
+    std::vector<std::array<double, 3>> Sigma;
 
     void ComputeSigma(const double loadValue, const std::array<int, 3>& loadType);
 
