@@ -8,7 +8,7 @@ int main() {
   try {
     const auto start = std::chrono::system_clock::now();
 
-    constexpr size_t nTimeSteps = 4;
+    constexpr size_t nTimeSteps = 10;
     auto input = std::make_unique<InputData>(10.0, 10.0, 100, 100, nTimeSteps, 1'000, 0.5);
     SigmaCalc sigma_calc(std::move(input));
     constexpr double load_value = 0.002;

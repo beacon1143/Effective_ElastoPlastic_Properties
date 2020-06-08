@@ -19,19 +19,21 @@ namespace EFF_PROPS {
     // material properties
     double Kmax, Gmax, rho_max;
     std::vector<std::vector<double>> E, nu, K, G, rho;
-    std::vector<std::vector<double>> Gav;
+    std::vector<std::vector<double>> Gav;                    // for tauXY
     void SetMaterials();
+    double cohesion;                                         // yield strength
 
     // numeric
     double dT;              // time step
     [[deprecated("only Nx, not Ny, is used in formula")]] double damp;            // damping factor
 
     // variables
-    std::vector<std::vector<double>> Ux, Uy;                 // displacement
-    std::vector<std::vector<double>> divU;                   // displacement divergence
-    std::vector<std::vector<double>> Vx, Vy;                 // velocity
-    std::vector<std::vector<double>> Pinit, P;               // hydrostatic stress (ball part of tensor)
-    std::vector<std::vector<double>> tauXX, tauYY, tauXY;    // deviatoric stress
+    std::vector<std::vector<double>> Ux, Uy;                       // displacement
+    std::vector<std::vector<double>> divU;                         // displacement divergence
+    std::vector<std::vector<double>> Vx, Vy;                       // velocity
+    std::vector<std::vector<double>> Pinit, P;                     // hydrostatic stress (ball part of tensor)
+    std::vector<std::vector<double>> tauXX, tauYY, tauXY;          // deviatoric stress
+    std::vector<std::vector<double>> tauXXav, tauYYav, tauXYav;    // deviatoric stress for plasticity criteria
 
     // effective stress
     std::vector<std::array<double, 3>> Sigma;

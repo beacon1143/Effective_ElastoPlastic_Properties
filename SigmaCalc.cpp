@@ -98,6 +98,7 @@ namespace EFF_PROPS {
     Kmax = GetMaxElement(K);
     Gmax = GetMaxElement(G);
     rho_max = GetMaxElement(rho);
+    cohesion = 0.00075;
 
     /*std::cout << "Gmax = " << Gmax << std::endl;
     std::cout << "Kmax = " << Kmax << std::endl;*/
@@ -158,6 +159,20 @@ namespace EFF_PROPS {
       vec.resize(inp->nY - 1, 0.0);
     }
 
+    // deviatoric stress for plasticity criteria
+    tauXXav.resize(inp->nX - 1);
+    for (auto& vec : tauXXav) {
+      vec.resize(inp->nY - 1, 0.0);
+    }
+    tauYYav.resize(inp->nX - 1);
+    for (auto& vec : tauYYav) {
+      vec.resize(inp->nY - 1, 0.0);
+    }
+    tauXYav.resize(inp->nX);
+    for (auto& vec : tauXYav) {
+      vec.resize(inp->nY, 0.0);
+    }
+
     Sigma.resize(inp->nTimeSteps);
   }
 
@@ -203,7 +218,7 @@ namespace EFF_PROPS {
         ComputeDivergence(Ux, Uy, divU);
 
         // constitutive equation - Hooke's law
-  #pragma omp parallel for
+#pragma omp parallel for
         for (int i = 0; i < inp->nX; i++) {
           for (int j = 0; j < inp->nY; j++) {
             P[i][j] = Pinit[i][j] - K[i][j] * divU[i][j];
@@ -212,15 +227,56 @@ namespace EFF_PROPS {
           }
         }
 
-  #pragma omp parallel for
+#pragma omp parallel for
         for (int i = 0; i < inp->nXm; i++) {
           for (int j = 0; j < inp->nYm; j++) {
             tauXY[i][j] = Gav[i][j] * ( (Ux[i+1][j+1] - Ux[i+1][j]) / inp->dY + (Uy[i+1][j+1] - Uy[i][j+1]) / inp->dX );
           }
         }
 
+        // tauXY for plasticity
+        AverageOverFourPoints(tauXY, tauXYav, 1, 1);
+#pragma omp parallel for
+        for (int i = 1; i < inp->nXm; i++) {
+          tauXYav[i][0] = tauXYav[i][1];
+          tauXYav[i][inp->nXm] = tauXYav[i][inp->nXm - 1];
+        }
+#pragma omp parallel for
+        for (int i = 1; i < inp->nYm; i++) {
+          tauXYav[0][i] = tauXYav[1][i];
+          tauXYav[inp->nXm][i] = tauXYav[inp->nXm - 1][i];
+        }
+        tauXYav[0][0] = 0.5 * (tauXYav[1][0] + tauXYav[0][1]);
+        tauXYav[inp->nXm][0] = 0.5 * (tauXYav[inp->nXm][1] + tauXYav[inp->nXm - 1][0]);
+        tauXYav[0][inp->nYm] = 0.5 * (tauXYav[1][inp->nYm] + tauXYav[0][inp->nYm - 1]);
+        tauXYav[inp->nXm][inp->nYm] = 0.5 * (tauXYav[inp->nXm][inp->nYm - 1] + tauXYav[inp->nXm - 1][inp->nYm]);
+
+        // plasticity
+#pragma omp parallel for
+        for (int i = 0; i < inp->nX; i++) {
+          for (int j = 0; j < inp->nY; j++) {
+            double j2 = sqrt(tauXX[i][j] * tauXX[i][j] + tauYY[i][j] * tauYY[i][j] + 2.0 * tauXYav[i][j] * tauXYav[i][j]);
+            if (j2 > cohesion) {
+              tauXX[i][j] *= cohesion / j2;
+              tauYY[i][j] *= cohesion / j2;
+            }
+          }
+        }
+
+        AverageOverFourPoints(tauXX, tauXXav);
+        AverageOverFourPoints(tauYY, tauYYav);
+#pragma omp parallel for
+        for (int i = 0; i < inp->nXm; i++) {
+          for (int j = 0; j < inp->nYm; j++) {
+            double j2xy = sqrt(tauXXav[i][j] * tauXXav[i][j] + tauYYav[i][j] * tauYYav[i][j] + 2.0 * tauXY[i][j] * tauXY[i][j]);
+            if (j2xy > cohesion) {
+              tauXY[i][j] *= cohesion / j2xy;
+            }
+          }
+        }
+
         // motion equation
-  #pragma omp parallel for
+#pragma omp parallel for
         for (int i = 1; i < inp->nX; i++) {
           for (int j = 1; j < inp->nYm; j++) {
             Vx[i][j] = Vx[i][j] * (1.0 - dT * damp) + (
@@ -230,7 +286,7 @@ namespace EFF_PROPS {
           }
         }
 
-  #pragma omp parallel for
+#pragma omp parallel for
         for (int i = 1; i < inp->nXm; i++) {
           for (int j = 1; j < inp->nY; j++) {
             Vy[i][j] = Vy[i][j] * (1.0 - dT * damp) + (
@@ -248,13 +304,13 @@ namespace EFF_PROPS {
         }
 
         // displacement
-  #pragma omp parallel for
+#pragma omp parallel for
         for (int i = 0; i < inp->nXp; i++) {
           for (int j = 0; j < inp->nY; j++) {
             Ux[i][j] = Ux[i][j] + Vx[i][j] * dT;
           }
         }
-  #pragma omp parallel for
+#pragma omp parallel for
         for (int i = 0; i < inp->nX; i++) {
           for (int j = 0; j < inp->nYp; j++) {
             Uy[i][j] = Uy[i][j] + Vy[i][j] * dT;
