@@ -38,7 +38,8 @@ namespace EFF_PROPS {
   }
 
   template <typename T>
-  void AverageOverFourPoints(const std::vector<std::vector<T>>& init, std::vector<std::vector<T>>& aver) {
+  void AverageOverFourPoints(const std::vector<std::vector<T>>& init, std::vector<std::vector<T>>& aver, 
+                             const size_t startX = 0, const size_t startY = 0) {
     const size_t n1 = init.size();
     if (n1 < 2) {
       throw std::runtime_error("Error! First dimension of init is too small!\n");
@@ -50,23 +51,19 @@ namespace EFF_PROPS {
       }
     }
 
-    if (aver.size() != n1 - 1) {
+    if (aver.size() != n1 - 1 + 2 * startX) {
       throw std::runtime_error("Error! First dimension of aver is bad!\n");
     }
     for (size_t i = 2; i < n1 - 1; i++) {
-      if (aver[i].size() != n2 - 1) {
+      if (aver[i].size() != n2 - 1 + 2 * startY) {
         throw std::runtime_error("Error! Second dimension of aver is bad!\n");
       }
     }
 
-    for (size_t i = 0; i < n1 - 1; i++) {
-      for (size_t j = 0; j < n2 - 1; j++) {
-        aver[i][j] = init[i][j] + init[i+1][j] + init[i][j+1] + init[i+1][j+1];
-      }
-    }
-    for (auto& vec : aver) {
-      for (auto& el : vec) {
-        el *= 0.25;
+#pragma omp parallel for
+    for (int i = 0; i < n1 - 1; i++) {
+      for (int j = 0; j < n2 - 1; j++) {
+        aver[startX + i][startY + j] = 0.25 * (init[i][j] + init[i+1][j] + init[i][j+1] + init[i+1][j+1]);
       }
     }
   }
