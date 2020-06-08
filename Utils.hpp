@@ -5,8 +5,11 @@
 
 namespace EFF_PROPS {
 
+  using EP_INT = long long;
+  using EP_FLOAT = double;
+
   template <typename T>
-  void ResizeXY(std::vector<std::vector<T>>& matr, const int n1, const int n2) {
+  void ResizeXY(std::vector<std::vector<T>>& matr, const EP_INT n1, const EP_INT n2) {
     matr.resize(n1);
     for (auto& vec: matr) {
       vec.resize(n2);
@@ -39,7 +42,7 @@ namespace EFF_PROPS {
 
   template <typename T>
   void AverageOverFourPoints(const std::vector<std::vector<T>>& init, std::vector<std::vector<T>>& aver, 
-                             const size_t startX = 0, const size_t startY = 0) {
+                             const EP_INT startX = 0, const EP_INT startY = 0) {
     const size_t n1 = init.size();
     if (n1 < 2) {
       throw std::runtime_error("Error! First dimension of init is too small!\n");
@@ -61,8 +64,8 @@ namespace EFF_PROPS {
     }
 
 #pragma omp parallel for
-    for (int i = 0; i < n1 - 1; i++) {
-      for (int j = 0; j < n2 - 1; j++) {
+    for (EP_INT i = 0; i < n1 - 1; i++) {
+      for (EP_INT j = 0; j < n2 - 1; j++) {
         aver[startX + i][startY + j] = 0.25 * (init[i][j] + init[i+1][j] + init[i][j+1] + init[i+1][j+1]);
       }
     }

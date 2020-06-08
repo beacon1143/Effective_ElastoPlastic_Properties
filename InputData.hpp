@@ -12,20 +12,20 @@ namespace EFF_PROPS {
 
   class InputData {
   public:
-    double sizeX, sizeY;    // physical size
-    int nX, nY;             // numbers of space steps
-    int nXp, nYp;
-    int nXm, nYm;
+    EP_FLOAT sizeX, sizeY;    // physical size
+    EP_INT nX, nY;             // numbers of space steps
+    EP_INT nXp, nYp;
+    EP_INT nXm, nYm;
     size_t nTimeSteps;
     size_t nIterations;
-    double courant;         // Courant–Friedrichs–Lewy
+    EP_FLOAT courant;         // Courant–Friedrichs–Lewy
 
-    double dX, dY;          // space steps
+    EP_FLOAT dX, dY;          // space steps
 
     InputData() = delete;
-    explicit InputData(const double size_x, const double size_y,
-                       const int nX, const int nY,
-                       const size_t nTimeSteps, const size_t nIterations, const double courant);
+    explicit InputData(const EP_FLOAT size_x, const EP_FLOAT size_y,
+                       const EP_INT nX, const EP_INT nY,
+                       const size_t nTimeSteps, const size_t nIterations, const EP_FLOAT courant);
   private:
   };
 

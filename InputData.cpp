@@ -2,9 +2,9 @@
 
 namespace EFF_PROPS {
 
-  InputData::InputData(const double sizeX_, const double sizeY_,
-                       const int nX_, const int nY_,
-                       const size_t nTimeSteps_, const size_t nIterations_, const double courant_) {
+  InputData::InputData(const EP_FLOAT sizeX_, const EP_FLOAT sizeY_,
+                       const EP_INT nX_, const EP_INT nY_,
+                       const size_t nTimeSteps_, const size_t nIterations_, const EP_FLOAT courant_) {
     if (sizeX_ <= 0.0) {
       throw std::runtime_error("Error! sizeX is not positive!\n");
     }

@@ -12,41 +12,41 @@ namespace EFF_PROPS {
     std::unique_ptr<InputData> inp;
 
     // coordinates
-    std::vector<std::vector<double>> x, y;
-    std::vector<std::vector<double>> xUx, yUx;
-    std::vector<std::vector<double>> xUy, yUy;
+    std::vector<std::vector<EP_FLOAT>> x, y;
+    std::vector<std::vector<EP_FLOAT>> xUx, yUx;
+    std::vector<std::vector<EP_FLOAT>> xUy, yUy;
 
     // material properties
-    double Kmax, Gmax, rho_max;
-    std::vector<std::vector<double>> E, nu, K, G, rho;
-    std::vector<std::vector<double>> Gav;                    // for tauXY
+    EP_FLOAT Kmax, Gmax, rho_max;
+    std::vector<std::vector<EP_FLOAT>> E, nu, K, G, rho;
+    std::vector<std::vector<EP_FLOAT>> Gav;                    // for tauXY
     void SetMaterials();
-    double cohesion;                                         // yield strength
+    EP_FLOAT cohesion;                                         // yield strength
 
     // numeric
-    double dT;              // time step
-    [[deprecated("only Nx, not Ny, is used in formula")]] double damp;            // damping factor
+    EP_FLOAT dT;              // time step
+    [[deprecated("only Nx, not Ny, is used in formula")]] EP_FLOAT damp;            // damping factor
 
     // variables
-    std::vector<std::vector<double>> Ux, Uy;                       // displacement
-    std::vector<std::vector<double>> divU;                         // displacement divergence
-    std::vector<std::vector<double>> Vx, Vy;                       // velocity
-    std::vector<std::vector<double>> Pinit, P;                     // hydrostatic stress (ball part of tensor)
-    std::vector<std::vector<double>> tauXX, tauYY, tauXY;          // deviatoric stress
-    std::vector<std::vector<double>> tauXXav, tauYYav, tauXYav;    // deviatoric stress for plasticity criteria
+    std::vector<std::vector<EP_FLOAT>> Ux, Uy;                       // displacement
+    std::vector<std::vector<EP_FLOAT>> divU;                         // displacement divergence
+    std::vector<std::vector<EP_FLOAT>> Vx, Vy;                       // velocity
+    std::vector<std::vector<EP_FLOAT>> Pinit, P;                     // hydrostatic stress (ball part of tensor)
+    std::vector<std::vector<EP_FLOAT>> tauXX, tauYY, tauXY;          // deviatoric stress
+    std::vector<std::vector<EP_FLOAT>> tauXXav, tauYYav, tauXYav;    // deviatoric stress for plasticity criteria
 
     // effective stress
-    std::vector<std::array<double, 3>> Sigma;
+    std::vector<std::array<EP_FLOAT, 3>> Sigma;
 
-    void ComputeSigma(const double loadValue, const std::array<int, 3>& loadType);
+    void ComputeSigma(const EP_FLOAT loadValue, const std::array<EP_INT, 3>& loadType);
 
     SigmaCalc() = delete;
     explicit SigmaCalc(std::unique_ptr<InputData> inp_);
 
   private:
-    void ComputeDivergence(const std::vector<std::vector<double>>& Ax,
-                           const std::vector<std::vector<double>>& Ay,
-                           std::vector<std::vector<double>>& divA) const;
+    void ComputeDivergence(const std::vector<std::vector<EP_FLOAT>>& Ax,
+                           const std::vector<std::vector<EP_FLOAT>>& Ay,
+                           std::vector<std::vector<EP_FLOAT>>& divA) const;
   };
 
 } // namespace

@@ -14,8 +14,8 @@ namespace EFF_PROPS {
       }
     }
 
-    /*for (int i = 0; i < inp->nX; i++) {
-      for (int j = 0; j < inp->nY; j++) {
+    /*for (EP_INT i = 0; i < inp->nX; i++) {
+      for (EP_INT j = 0; j < inp->nY; j++) {
         if (sqrt(x[i][j] * x[i][j] + y[i][j] * y[i][j]) < 2.85459861019) {
           E[i][j] = 2.0;
           nu[i][j] = 0.2;
@@ -43,10 +43,10 @@ namespace EFF_PROPS {
     /* VARIABLES */
     x.resize(inp->nX);
     y.resize(inp->nX);
-    for (int i = 0; i < inp->nX; i++) {
+    for (EP_INT i = 0; i < inp->nX; i++) {
       x[i].resize(inp->nY);
       y[i].resize(inp->nY);
-      for (int j = 0; j < inp->nY; j++) {
+      for (EP_INT j = 0; j < inp->nY; j++) {
         x[i][j] = -0.5 * inp->sizeX + inp->dX * i;
         y[i][j] = -0.5 * inp->sizeY + inp->dY * j;
       }
@@ -54,10 +54,10 @@ namespace EFF_PROPS {
 
     xUx.resize(inp->nX + 1);
     yUx.resize(inp->nX + 1);
-    for (int i = 0; i < inp->nX + 1; i++) {
+    for (EP_INT i = 0; i < inp->nX + 1; i++) {
       xUx[i].resize(inp->nY);
       yUx[i].resize(inp->nY);
-      for (int j = 0; j < inp->nY; j++) {
+      for (EP_INT j = 0; j < inp->nY; j++) {
         xUx[i][j] = -0.5 * (inp->sizeX + inp->dX) + inp->dX * i;
         yUx[i][j] = -0.5 * inp->sizeY + inp->dY * j;
       }
@@ -65,10 +65,10 @@ namespace EFF_PROPS {
 
     xUy.resize(inp->nX);
     yUy.resize(inp->nX);
-    for (int i = 0; i < inp->nX; i++) {
+    for (EP_INT i = 0; i < inp->nX; i++) {
       xUy[i].resize(inp->nY + 1);
       yUy[i].resize(inp->nY + 1);
-      for (int j = 0; j < inp->nY + 1; j++) {
+      for (EP_INT j = 0; j < inp->nY + 1; j++) {
         xUy[i][j] = -0.5 * inp->sizeX + inp->dX * i;
         yUy[i][j] = -0.5 * (inp->sizeY + inp->dY) + inp->dY * j;
       }
@@ -83,10 +83,10 @@ namespace EFF_PROPS {
 
     K.resize(inp->nX);
     G.resize(inp->nX);
-    for (int i = 0; i < inp->nX; i++) {
+    for (EP_INT i = 0; i < inp->nX; i++) {
       K[i].resize(inp->nY);
       G[i].resize(inp->nY);
-      for (int j = 0; j < inp->nY; j++) {
+      for (EP_INT j = 0; j < inp->nY; j++) {
         K[i][j] = E[i][j] / (3.0 - 6.0 * nu[i][j]);
         G[i][j] = E[i][j] / (2.0 + 2.0 * nu[i][j]);
       }
@@ -176,19 +176,19 @@ namespace EFF_PROPS {
     Sigma.resize(inp->nTimeSteps);
   }
 
-  void SigmaCalc::ComputeSigma(const double loadValue, const std::array<int, 3>& loadType) {
+  void SigmaCalc::ComputeSigma(const EP_FLOAT loadValue, const std::array<EP_INT, 3>& loadType) {
     // boundary conditions
-    const double dUxdx = loadValue * loadType[0];
-    const double dUydy = loadValue * loadType[1];
-    const double dUxdy = loadValue * loadType[2];
+    const EP_FLOAT dUxdx = loadValue * loadType[0];
+    const EP_FLOAT dUydy = loadValue * loadType[1];
+    const EP_FLOAT dUxdy = loadValue * loadType[2];
 
-    for (int i = 0; i < inp->nX + 1; i++) {
-      for (int j = 0; j < inp->nY; j++) {
+    for (EP_INT i = 0; i < inp->nX + 1; i++) {
+      for (EP_INT j = 0; j < inp->nY; j++) {
         Ux[i][j] = 0.0; //dUxdx * xUx[i][j] + dUxdy * yUx[i][j];
       }
     }
-    for (int i = 0; i < inp->nX; i++) {
-      for (int j = 0; j < inp->nY + 1; j++) {
+    for (EP_INT i = 0; i < inp->nX; i++) {
+      for (EP_INT j = 0; j < inp->nY + 1; j++) {
         Uy[i][j] = 0.0; //dUydy * yUy[i][j];
       }
     }
@@ -202,13 +202,13 @@ namespace EFF_PROPS {
 
     for (size_t tim = 0; tim < inp->nTimeSteps; tim++) {
       // initial conditions
-      for (int i = 0; i < inp->nX + 1; i++) {
-        for (int j = 0; j < inp->nY; j++) {
+      for (EP_INT i = 0; i < inp->nX + 1; i++) {
+        for (EP_INT j = 0; j < inp->nY; j++) {
           Ux[i][j] += (dUxdx * xUx[i][j] + dUxdy * yUx[i][j]) / inp->nTimeSteps;
         }
       }
-      for (int i = 0; i < inp->nX; i++) {
-        for (int j = 0; j < inp->nY + 1; j++) {
+      for (EP_INT i = 0; i < inp->nX; i++) {
+        for (EP_INT j = 0; j < inp->nY + 1; j++) {
           Uy[i][j] += (dUydy * yUy[i][j]) / inp->nTimeSteps;
         }
       }
@@ -219,8 +219,8 @@ namespace EFF_PROPS {
 
         // constitutive equation - Hooke's law
 #pragma omp parallel for
-        for (int i = 0; i < inp->nX; i++) {
-          for (int j = 0; j < inp->nY; j++) {
+        for (EP_INT i = 0; i < inp->nX; i++) {
+          for (EP_INT j = 0; j < inp->nY; j++) {
             P[i][j] = Pinit[i][j] - K[i][j] * divU[i][j];
             tauXX[i][j] = 2.0 * G[i][j] * ( (Ux[i+1][j] - Ux[i][j]) / inp->dX - divU[i][j]/3.0);
             tauYY[i][j] = 2.0 * G[i][j] * ( (Uy[i][j+1] - Uy[i][j]) / inp->dY - divU[i][j]/3.0);
@@ -228,8 +228,8 @@ namespace EFF_PROPS {
         }
 
 #pragma omp parallel for
-        for (int i = 0; i < inp->nXm; i++) {
-          for (int j = 0; j < inp->nYm; j++) {
+        for (EP_INT i = 0; i < inp->nXm; i++) {
+          for (EP_INT j = 0; j < inp->nYm; j++) {
             tauXY[i][j] = Gav[i][j] * ( (Ux[i+1][j+1] - Ux[i+1][j]) / inp->dY + (Uy[i+1][j+1] - Uy[i][j+1]) / inp->dX );
           }
         }
@@ -237,12 +237,12 @@ namespace EFF_PROPS {
         // tauXY for plasticity
         AverageOverFourPoints(tauXY, tauXYav, 1, 1);
 #pragma omp parallel for
-        for (int i = 1; i < inp->nXm; i++) {
+        for (EP_INT i = 1; i < inp->nXm; i++) {
           tauXYav[i][0] = tauXYav[i][1];
           tauXYav[i][inp->nXm] = tauXYav[i][inp->nXm - 1];
         }
 #pragma omp parallel for
-        for (int i = 1; i < inp->nYm; i++) {
+        for (EP_INT i = 1; i < inp->nYm; i++) {
           tauXYav[0][i] = tauXYav[1][i];
           tauXYav[inp->nXm][i] = tauXYav[inp->nXm - 1][i];
         }
@@ -253,9 +253,9 @@ namespace EFF_PROPS {
 
         // plasticity
 #pragma omp parallel for
-        for (int i = 0; i < inp->nX; i++) {
-          for (int j = 0; j < inp->nY; j++) {
-            double j2 = sqrt(tauXX[i][j] * tauXX[i][j] + tauYY[i][j] * tauYY[i][j] + 2.0 * tauXYav[i][j] * tauXYav[i][j]);
+        for (EP_INT i = 0; i < inp->nX; i++) {
+          for (EP_INT j = 0; j < inp->nY; j++) {
+            EP_FLOAT j2 = sqrt(tauXX[i][j] * tauXX[i][j] + tauYY[i][j] * tauYY[i][j] + 2.0 * tauXYav[i][j] * tauXYav[i][j]);
             if (j2 > cohesion) {
               tauXX[i][j] *= cohesion / j2;
               tauYY[i][j] *= cohesion / j2;
@@ -266,9 +266,9 @@ namespace EFF_PROPS {
         AverageOverFourPoints(tauXX, tauXXav);
         AverageOverFourPoints(tauYY, tauYYav);
 #pragma omp parallel for
-        for (int i = 0; i < inp->nXm; i++) {
-          for (int j = 0; j < inp->nYm; j++) {
-            double j2xy = sqrt(tauXXav[i][j] * tauXXav[i][j] + tauYYav[i][j] * tauYYav[i][j] + 2.0 * tauXY[i][j] * tauXY[i][j]);
+        for (EP_INT i = 0; i < inp->nXm; i++) {
+          for (EP_INT j = 0; j < inp->nYm; j++) {
+            EP_FLOAT j2xy = sqrt(tauXXav[i][j] * tauXXav[i][j] + tauYYav[i][j] * tauYYav[i][j] + 2.0 * tauXY[i][j] * tauXY[i][j]);
             if (j2xy > cohesion) {
               tauXY[i][j] *= cohesion / j2xy;
             }
@@ -277,8 +277,8 @@ namespace EFF_PROPS {
 
         // motion equation
 #pragma omp parallel for
-        for (int i = 1; i < inp->nX; i++) {
-          for (int j = 1; j < inp->nYm; j++) {
+        for (EP_INT i = 1; i < inp->nX; i++) {
+          for (EP_INT j = 1; j < inp->nYm; j++) {
             Vx[i][j] = Vx[i][j] * (1.0 - dT * damp) + (
                        (-P[i][j] + P[i-1][j] + tauXX[i][j] - tauXX[i-1][j]) / inp->dX / rho_max +
                        (tauXY[i-1][j] - tauXY[i-1][j-1]) / inp->dY
@@ -287,8 +287,8 @@ namespace EFF_PROPS {
         }
 
 #pragma omp parallel for
-        for (int i = 1; i < inp->nXm; i++) {
-          for (int j = 1; j < inp->nY; j++) {
+        for (EP_INT i = 1; i < inp->nXm; i++) {
+          for (EP_INT j = 1; j < inp->nY; j++) {
             Vy[i][j] = Vy[i][j] * (1.0 - dT * damp) + (
                        (-P[i][j] + P[i][j-1] + tauYY[i][j] - tauYY[i][j-1]) / inp->dY / rho_max +
                        (tauXY[i][j-1] - tauXY[i-1][j-1]) / inp->dX
@@ -298,29 +298,29 @@ namespace EFF_PROPS {
 
         if ((it+1) % 1'000 == 0) {
           std::cout << "Iteration " << it + 1 << " from " << inp->nIterations << "\n";
-          const double Vxmax = GetMaxElement(Vx);
-          const double Vymax = GetMaxElement(Vy);
+          const EP_FLOAT Vxmax = GetMaxElement(Vx);
+          const EP_FLOAT Vymax = GetMaxElement(Vy);
           std::cout << "Vxmax = " << Vxmax << "\tVymax = " << Vymax << "\n";
         }
 
         // displacement
 #pragma omp parallel for
-        for (int i = 0; i < inp->nXp; i++) {
-          for (int j = 0; j < inp->nY; j++) {
+        for (EP_INT i = 0; i < inp->nXp; i++) {
+          for (EP_INT j = 0; j < inp->nY; j++) {
             Ux[i][j] = Ux[i][j] + Vx[i][j] * dT;
           }
         }
 #pragma omp parallel for
-        for (int i = 0; i < inp->nX; i++) {
-          for (int j = 0; j < inp->nYp; j++) {
+        for (EP_INT i = 0; i < inp->nX; i++) {
+          for (EP_INT j = 0; j < inp->nYp; j++) {
             Uy[i][j] = Uy[i][j] + Vy[i][j] * dT;
           }
         }
       } // for (it)
 
       /*std::cout << "tauYY\n";
-      for (int i = 0; i < inp->nX; i++) {
-        for (int j = 0; j < inp->nY; j++) {
+      for (EP_INT i = 0; i < inp->nX; i++) {
+        for (EP_INT j = 0; j < inp->nY; j++) {
           std::cout << tauYY[i][j] << ' ';
         }
         std::cout << '\n';
@@ -328,37 +328,37 @@ namespace EFF_PROPS {
 
       // averaging
       Sigma[tim][0] = 0.0;
-      for (int i = 0; i < inp->nX; i++) {
-        for (int j = 0; j < inp->nY; j++) {
+      for (EP_INT i = 0; i < inp->nX; i++) {
+        for (EP_INT j = 0; j < inp->nY; j++) {
           Sigma[tim][0] += tauXX[i][j] - P[i][j];
         }
       }
-      Sigma[tim][0] /= static_cast<double>(inp->nX * inp->nY);
+      Sigma[tim][0] /= static_cast<EP_FLOAT>(inp->nX * inp->nY);
 
       Sigma[tim][1] = 0.0;
-      for (int i = 0; i < inp->nX; i++) {
-        for (int j = 0; j < inp->nY; j++) {
+      for (EP_INT i = 0; i < inp->nX; i++) {
+        for (EP_INT j = 0; j < inp->nY; j++) {
           Sigma[tim][1] += tauYY[i][j] - P[i][j];
         }
       }
-      Sigma[tim][1] /= static_cast<double>(inp->nX * inp->nY);
+      Sigma[tim][1] /= static_cast<EP_FLOAT>(inp->nX * inp->nY);
 
       Sigma[tim][2] = 0.0;
-      for (int i = 0; i < inp->nX - 1; i++) {
-        for (int j = 0; j < inp->nY - 1; j++) {
+      for (EP_INT i = 0; i < inp->nX - 1; i++) {
+        for (EP_INT j = 0; j < inp->nY - 1; j++) {
           Sigma[tim][2] += tauXY[i][j];
         }
       }
-      Sigma[tim][2] /= static_cast<double>((inp->nX - 1) * (inp->nY - 1));
+      Sigma[tim][2] /= static_cast<EP_FLOAT>((inp->nX - 1) * (inp->nY - 1));
 
       /*std::cout << "Sigma\n" << Sigma[0] << ' ' << Sigma[1] << ' ' << Sigma[2] << '\n';*/
     } // for (tim)
   }
 
 
-  void SigmaCalc::ComputeDivergence(const std::vector<std::vector<double>>& Ax,
-                                    const std::vector<std::vector<double>>& Ay,
-                                    std::vector<std::vector<double>>& divA) const {
+  void SigmaCalc::ComputeDivergence(const std::vector<std::vector<EP_FLOAT>>& Ax,
+                                    const std::vector<std::vector<EP_FLOAT>>& Ay,
+                                    std::vector<std::vector<EP_FLOAT>>& divA) const {
     size_t length = Ax.size() - 1;
     for (const auto& vec : Ax) {
       if (vec.size() != length) {
@@ -382,8 +382,8 @@ namespace EFF_PROPS {
       }
     }
 
-    for (int i = 0; i < length; i++) {
-      for (int j = 0; j < length; j++) {
+    for (size_t i = 0; i < length; i++) {
+      for (size_t j = 0; j < length; j++) {
         divA[i][j] = (Ax[i+1][j] - Ax[i][j]) / inp->dX + (Ay[i][j+1] - Ay[i][j]) / inp->dY;
       }
     }
