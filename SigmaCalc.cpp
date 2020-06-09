@@ -106,7 +106,8 @@ namespace EFF_PROPS {
     /* NUMERIC */
     dT = inp->courant * std::min(inp->dX, inp->dY) / sqrt( (Kmax + 4.0 * Gmax / 3.0) / rho_max );
     /*std::cout << "dT = " << dT << std::endl;*/
-    damp = 4.0 / dT / inp->nX;
+    dampX = 4.0 / dT / inp->nX;
+    dampY = 4.0 / dT / inp->nY;
 
     /* VARIABLES */
     // displacement
@@ -281,7 +282,7 @@ namespace EFF_PROPS {
 #pragma omp parallel for
         for (EP_INT i = 1; i < inp->nX; i++) {
           for (EP_INT j = 1; j < inp->nYm; j++) {
-            Vx[i][j] = Vx[i][j] * (1.0 - dT * damp) + (
+            Vx[i][j] = Vx[i][j] * (1.0 - dT * dampX) + (
                        (-P[i][j] + P[i-1][j] + tauXX[i][j] - tauXX[i-1][j]) / inp->dX / rho_max +
                        (tauXY[i-1][j] - tauXY[i-1][j-1]) / inp->dY
                        ) * dT;
@@ -291,7 +292,7 @@ namespace EFF_PROPS {
 #pragma omp parallel for
         for (EP_INT i = 1; i < inp->nXm; i++) {
           for (EP_INT j = 1; j < inp->nY; j++) {
-            Vy[i][j] = Vy[i][j] * (1.0 - dT * damp) + (
+            Vy[i][j] = Vy[i][j] * (1.0 - dT * dampY) + (
                        (-P[i][j] + P[i][j-1] + tauYY[i][j] - tauYY[i][j-1]) / inp->dY / rho_max +
                        (tauXY[i][j-1] - tauXY[i-1][j-1]) / inp->dX
                        ) * dT;

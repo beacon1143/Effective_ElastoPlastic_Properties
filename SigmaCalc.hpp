@@ -25,7 +25,7 @@ namespace EFF_PROPS {
 
     // numeric
     EP_FLOAT dT;              // time step
-    [[deprecated("only Nx, not Ny, is used in formula")]] EP_FLOAT damp;            // damping factor
+    EP_FLOAT dampX, dampY;    // damping factor
 
     // variables
     std::vector<std::vector<EP_FLOAT>> Ux, Uy;                       // displacement
