@@ -251,10 +251,14 @@ namespace EFF_PROPS {
         tauXYav[0][inp->nYm] = 0.5 * (tauXYav[1][inp->nYm] + tauXYav[0][inp->nYm - 1]);
         tauXYav[inp->nXm][inp->nYm] = 0.5 * (tauXYav[inp->nXm][inp->nYm - 1] + tauXYav[inp->nXm - 1][inp->nYm]);
 
+        AverageOverFourPoints(tauXX, tauXXav);
+        AverageOverFourPoints(tauYY, tauYYav);
+
         // plasticity
 #pragma omp parallel for
         for (EP_INT i = 0; i < inp->nX; i++) {
           for (EP_INT j = 0; j < inp->nY; j++) {
+            // Tresca criteria
             EP_FLOAT j2 = sqrt(tauXX[i][j] * tauXX[i][j] + tauYY[i][j] * tauYY[i][j] + 2.0 * tauXYav[i][j] * tauXYav[i][j]);
             if (j2 > cohesion) {
               tauXX[i][j] *= cohesion / j2;
@@ -263,8 +267,6 @@ namespace EFF_PROPS {
           }
         }
 
-        AverageOverFourPoints(tauXX, tauXXav);
-        AverageOverFourPoints(tauYY, tauYYav);
 #pragma omp parallel for
         for (EP_INT i = 0; i < inp->nXm; i++) {
           for (EP_INT j = 0; j < inp->nYm; j++) {
