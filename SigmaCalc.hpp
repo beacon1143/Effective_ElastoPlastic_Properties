@@ -3,6 +3,7 @@
 
 #include <array>
 #include <memory>
+#include <fstream>
 #include "InputData.hpp"
 
 namespace EFF_PROPS {
@@ -21,6 +22,7 @@ namespace EFF_PROPS {
     std::vector<std::vector<EP_FLOAT>> /*E, nu,*/ K, G, rho;
     std::vector<std::vector<EP_FLOAT>> Gav;                    // for tauXY
     EP_FLOAT cohesion;                                         // yield strength
+    EP_FLOAT Ppore;
 
     // numeric
     EP_FLOAT dT;              // time step

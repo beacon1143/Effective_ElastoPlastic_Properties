@@ -37,8 +37,7 @@ namespace EFF_PROPS {
     }
   }
 
-  void SigmaCalc::SetPressure(EP_FLOAT coh) {
-    double P0 = 1.0 * coh;
+  void SigmaCalc::SetPressure(EP_FLOAT P0) {
     for (EP_INT i = 0; i < inp->nX; i++) {
       for (EP_INT j = 0; j < inp->nY; j++) {
         if (sqrt(x[i][j] * x[i][j] + y[i][j] * y[i][j]) < 1.0) {
@@ -119,6 +118,7 @@ namespace EFF_PROPS {
     Gmax = GetMaxElement(G);
     rho_max = GetMaxElement(rho);
     cohesion = 0.001;
+    Ppore = 1.0 * cohesion;
 
     /*std::cout << "Gmax = " << Gmax << std::endl;
     std::cout << "Kmax = " << Kmax << std::endl;*/
@@ -161,7 +161,7 @@ namespace EFF_PROPS {
     for (auto& vec : Pinit) {
       vec.resize(inp->nY, 0.0);
     }
-    SetPressure(cohesion);
+    SetPressure(Ppore);
 
     P.resize(inp->nX);
     for (auto& vec : P) {
@@ -226,6 +226,12 @@ namespace EFF_PROPS {
     SetMatrix(tauXX, 0.0);
     SetMatrix(tauYY, 0.0);
     SetMatrix(tauXY, 0.0);
+
+    // plasticity indicators
+    std::vector<std::vector<EP_FLOAT>> iPlast(inp->nX);
+    for (auto& vec : iPlast) {
+      vec.resize(inp->nY, 0.0);
+    }
 
     /* TIME LOOP */
     for (size_t tim = 0; tim < inp->nTimeSteps; tim++) {
@@ -292,6 +298,7 @@ namespace EFF_PROPS {
             if (j2 > cohesion) {
               tauXX[i][j] *= cohesion / j2;
               tauYY[i][j] *= cohesion / j2;
+              iPlast[i][j] = 1.0;
             }
           }
         }
@@ -302,6 +309,10 @@ namespace EFF_PROPS {
             EP_FLOAT j2xy = sqrt(tauXXav[i][j] * tauXXav[i][j] + tauYYav[i][j] * tauYYav[i][j] + 2.0 * tauXY[i][j] * tauXY[i][j]);
             if (j2xy > cohesion) {
               tauXY[i][j] *= cohesion / j2xy;
+              iPlast[i][j] = 1.0;
+              iPlast[i + 1][j] = 1.0;
+              iPlast[i][j + 1] = 1.0;
+              iPlast[i + 1][j + 1] = 1.0;
             }
           }
         }
@@ -435,6 +446,47 @@ namespace EFF_PROPS {
       std::cout << "Keff = " << Keff[tim] << '\n';
       std::cout << "GeffXX = " << Geff[tim][0] << '\n';
       std::cout << "GeffYY = " << Geff[tim][1] << '\n';
+
+      std::ofstream fParams("../src/params.txt", std::ofstream::out);
+      fParams << inp->sizeX << " " << inp->sizeY << " " << inp->nX << " " << inp->nY << '\n';
+      fParams << Ppore << " " << cohesion << " " << loadValue << std::endl;
+      fParams.close();
+
+      std::ofstream fPres("../src/pressure.txt", std::ofstream::out);
+      for (EP_INT j = 0; j < inp->nY; j++) {
+        for (EP_INT i = 0; i < inp->nX; i++) {
+          fPres << P[i][j] << " ";
+        }
+        fPres << '\n';
+      }
+      fPres.close();
+
+      std::ofstream fTauXX("../src/tau_xx.txt", std::ofstream::out);
+      for (EP_INT j = 0; j < inp->nY; j++) {
+        for (EP_INT i = 0; i < inp->nX; i++) {
+          fTauXX << tauXX[i][j] << " ";
+        }
+        fTauXX << '\n';
+      }
+      fTauXX.close();
+
+      std::ofstream fTauYY("../src/tau_yy.txt", std::ofstream::out);
+      for (EP_INT j = 0; j < inp->nY; j++) {
+        for (EP_INT i = 0; i < inp->nX; i++) {
+          fTauYY << tauYY[i][j] << " ";
+        }
+        fTauYY << '\n';
+      }
+      fTauYY.close();
+
+      std::ofstream fPlast("../src/plast.txt", std::ofstream::out);
+      for (EP_INT j = 0; j < inp->nY; j++) {
+        for (EP_INT i = 0; i < inp->nX; i++) {
+          fPlast << iPlast[i][j] << " ";
+        }
+        fPlast << '\n';
+      }
+      fPlast.close();
 
       /*std::cout << "Sigma\n" << Sigma[0] << ' ' << Sigma[1] << ' ' << Sigma[2] << '\n';*/
     } // for (tim)

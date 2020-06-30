@@ -9,7 +9,7 @@ int main() {
     const auto start = std::chrono::system_clock::now();
 
     constexpr size_t nTimeSteps = 1;
-    auto input = std::make_unique<InputData>(20.0, 20.0, 200, 200, nTimeSteps, 20'000, 0.125);
+    auto input = std::make_unique<InputData>(20.0, 20.0, 1000, 1000, nTimeSteps, 80'000, 0.125);
     SigmaCalc sigma_calc(std::move(input));
     constexpr EP_FLOAT load_value = -0.002;
 
