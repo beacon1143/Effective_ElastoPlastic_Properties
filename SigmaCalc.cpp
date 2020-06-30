@@ -3,7 +3,7 @@
 namespace EFF_PROPS {
 
   void SigmaCalc::SetMaterials() {
-    for (auto& vec : E) {
+    /*for (auto& vec : E) {
       for (auto& el : vec) {
         el = 1.0;
       }
@@ -12,24 +12,41 @@ namespace EFF_PROPS {
       for (auto& el : vec) {
         el = 0.25;
       }
-    }
+    }*/
 
-    /*for (EP_INT i = 0; i < inp->nX; i++) {
+    double K0 = 1.0;
+    double G0 = 0.25;
+
+    for (EP_INT i = 0; i < inp->nX; i++) {
       for (EP_INT j = 0; j < inp->nY; j++) {
-        if (sqrt(x[i][j] * x[i][j] + y[i][j] * y[i][j]) < 2.85459861019) {
-          E[i][j] = 2.0;
-          nu[i][j] = 0.2;
+        if (sqrt(x[i][j] * x[i][j] + y[i][j] * y[i][j]) < 1.0) {
+          K[i][j] = 0.01 * K0;
+          G[i][j] = 0.01 * G0;
         }
         else {
-          E[i][j] = 0.002;
-          nu[i][j] = 0.3;
+          K[i][j] = K0;
+          G[i][j] = G0;
         }
       }
-    }*/
+    }
 
     for (auto& vec : rho) {
       for (auto& el : vec) {
-        el = 2.0;
+        el = 1.0;
+      }
+    }
+  }
+
+  void SigmaCalc::SetPressure(EP_FLOAT coh) {
+    double P0 = 1.0 * coh;
+    for (EP_INT i = 0; i < inp->nX; i++) {
+      for (EP_INT j = 0; j < inp->nY; j++) {
+        if (sqrt(x[i][j] * x[i][j] + y[i][j] * y[i][j]) < 1.0) {
+          Pinit[i][j] = P0;
+        }
+        else {
+          Pinit[i][j] = 0.0;
+        }
       }
     }
   }
@@ -75,13 +92,16 @@ namespace EFF_PROPS {
     }
 
     /* MATERIAL PROPERTIES */
-    ResizeXY(E, inp->nX, inp->nY);
-    ResizeXY(nu, inp->nX, inp->nY);
+    /*ResizeXY(E, inp->nX, inp->nY);
+    ResizeXY(nu, inp->nX, inp->nY);*/
     ResizeXY(rho, inp->nX, inp->nY);
+
+    ResizeXY(K, inp->nX, inp->nY);
+    ResizeXY(G, inp->nX, inp->nY);
 
     SetMaterials();
 
-    K.resize(inp->nX);
+    /*K.resize(inp->nX);
     G.resize(inp->nX);
     for (EP_INT i = 0; i < inp->nX; i++) {
       K[i].resize(inp->nY);
@@ -90,7 +110,7 @@ namespace EFF_PROPS {
         K[i][j] = E[i][j] / (3.0 - 6.0 * nu[i][j]);
         G[i][j] = E[i][j] / (2.0 + 2.0 * nu[i][j]);
       }
-    }
+    }*/
 
     ResizeXY(Gav, inp->nX - 1, inp->nY - 1);
     AverageOverFourPoints(G, Gav);
@@ -98,7 +118,7 @@ namespace EFF_PROPS {
     Kmax = GetMaxElement(K);
     Gmax = GetMaxElement(G);
     rho_max = GetMaxElement(rho);
-    cohesion = 0.00075;
+    cohesion = 0.001;
 
     /*std::cout << "Gmax = " << Gmax << std::endl;
     std::cout << "Kmax = " << Kmax << std::endl;*/
@@ -141,6 +161,8 @@ namespace EFF_PROPS {
     for (auto& vec : Pinit) {
       vec.resize(inp->nY, 0.0);
     }
+    SetPressure(cohesion);
+
     P.resize(inp->nX);
     for (auto& vec : P) {
       vec.resize(inp->nY, 0.0);
@@ -175,9 +197,13 @@ namespace EFF_PROPS {
     }
 
     Sigma.resize(inp->nTimeSteps);
+    deltaP.resize(inp->nTimeSteps, 0.0);
+    tauInfty.resize(inp->nTimeSteps, 0.0);
+    Keff.resize(inp->nTimeSteps, 0.0);
+    Geff.resize(inp->nTimeSteps);
   }
 
-  void SigmaCalc::ComputeSigma(const EP_FLOAT loadValue, const std::array<EP_INT, 3>& loadType) {
+  void SigmaCalc::ComputeSigma(const EP_FLOAT loadValue, const std::array<EP_FLOAT, 3>& loadType) {
     // boundary conditions
     const EP_FLOAT dUxdx = loadValue * loadType[0];
     const EP_FLOAT dUydy = loadValue * loadType[1];
@@ -201,6 +227,7 @@ namespace EFF_PROPS {
     SetMatrix(tauYY, 0.0);
     SetMatrix(tauXY, 0.0);
 
+    /* TIME LOOP */
     for (size_t tim = 0; tim < inp->nTimeSteps; tim++) {
       // initial conditions
       for (EP_INT i = 0; i < inp->nX + 1; i++) {
@@ -214,6 +241,7 @@ namespace EFF_PROPS {
         }
       }
 
+      /* ITERATIONS LOOP */
       for (size_t it = 0; it < inp->nIterations; it++) {
         // displacement divergence
         ComputeDivergence(Ux, Uy, divU);
@@ -299,7 +327,7 @@ namespace EFF_PROPS {
           }
         }
 
-        if ((it+1) % 1'000 == 0) {
+        if ((it+1) % 10'000 == 0) {
           std::cout << "Iteration " << it + 1 << " from " << inp->nIterations << "\n";
           const EP_FLOAT Vxmax = GetMaxElement(Vx);
           const EP_FLOAT Vymax = GetMaxElement(Vy);
@@ -353,6 +381,60 @@ namespace EFF_PROPS {
         }
       }
       Sigma[tim][2] /= static_cast<EP_FLOAT>((inp->nX - 1) * (inp->nY - 1));
+
+      deltaP[tim] = 0.0;
+      for (EP_INT i = 0; i < inp->nX; i++) {
+        deltaP[tim] += (tauXX[i][0] + tauYY[i][0] - 2.0 * P[i][0]) / inp->nX;
+        deltaP[tim] += (tauXX[i][inp->nY - 1] + tauYY[i][inp->nY - 1] - 2.0 * P[i][inp->nY - 1]) / inp->nX;
+      }
+      for (EP_INT j = 0; j < inp->nY; j++) {
+        deltaP[tim] += (tauXX[0][j] + tauYY[0][j] - 2.0 * P[0][j]) / inp->nY;
+        deltaP[tim] += (tauXX[inp->nX - 1][j] + tauYY[inp->nX - 1][j] - 2.0 * P[inp->nX - 1][j]) / inp->nY;
+      }
+      deltaP[tim] *= 0.125 / cohesion / sqrt(2.0);
+
+      tauInfty[tim] = 0.0;
+      for (EP_INT i = 0; i < inp->nX; i++) {
+        tauInfty[tim] += (tauXX[i][0] - tauYY[i][0]) / inp->nX;
+        tauInfty[tim] += (tauXX[i][inp->nY - 1] - tauYY[i][inp->nY - 1]) / inp->nX;
+      }
+      for (EP_INT j = 0; j < inp->nY; j++) {
+        tauInfty[tim] += (tauXX[0][j] - tauYY[0][j]) / inp->nY;
+        tauInfty[tim] += (tauXX[inp->nX - 1][j] - tauYY[inp->nX - 1][j]) / inp->nY;
+      }
+      tauInfty[tim] *= 0.125 / cohesion / sqrt(2.0);
+
+      EP_FLOAT divUeff = loadValue * (loadType[0] + loadType[1]);
+
+      Keff[tim] = 0.0;
+      for (EP_INT i = 0; i < inp->nX; i++) {
+        for (EP_INT j = 0; j < inp->nY; j++) {
+          Keff[tim] -= P[i][j];
+        }
+      }
+      Keff[tim] /= static_cast<EP_FLOAT>(inp->nX * inp->nY) * divUeff * (tim + 1) / inp->nTimeSteps;
+
+      Geff[tim][0] = 0.0;
+      for (EP_INT i = 0; i < inp->nX; i++) {
+        for (EP_INT j = 0; j < inp->nY; j++) {
+          Geff[tim][0] += tauXX[i][j];
+        }
+      }
+      Geff[tim][0] /= 2.0 * static_cast<EP_FLOAT>(inp->nX * inp->nY) * (loadValue * loadType[0] - divUeff / 3.0) * (tim + 1) / inp->nTimeSteps;
+
+      Geff[tim][1] = 0.0;
+      for (EP_INT i = 0; i < inp->nX; i++) {
+        for (EP_INT j = 0; j < inp->nY; j++) {
+          Geff[tim][1] += tauYY[i][j];
+        }
+      }
+      Geff[tim][1] /= 2.0 * static_cast<EP_FLOAT>(inp->nX * inp->nY) * (loadValue * loadType[1] - divUeff / 3.0) * (tim + 1) / inp->nTimeSteps;
+
+      std::cout << "deltaP = " << deltaP[tim] << '\n';
+      std::cout << "tauInfty = " << tauInfty[tim] << '\n';
+      std::cout << "Keff = " << Keff[tim] << '\n';
+      std::cout << "GeffXX = " << Geff[tim][0] << '\n';
+      std::cout << "GeffYY = " << Geff[tim][1] << '\n';
 
       /*std::cout << "Sigma\n" << Sigma[0] << ' ' << Sigma[1] << ' ' << Sigma[2] << '\n';*/
     } // for (tim)

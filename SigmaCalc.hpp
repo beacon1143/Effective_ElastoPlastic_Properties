@@ -18,9 +18,8 @@ namespace EFF_PROPS {
 
     // material properties
     EP_FLOAT Kmax, Gmax, rho_max;
-    std::vector<std::vector<EP_FLOAT>> E, nu, K, G, rho;
+    std::vector<std::vector<EP_FLOAT>> /*E, nu,*/ K, G, rho;
     std::vector<std::vector<EP_FLOAT>> Gav;                    // for tauXY
-    void SetMaterials();
     EP_FLOAT cohesion;                                         // yield strength
 
     // numeric
@@ -37,8 +36,12 @@ namespace EFF_PROPS {
 
     // effective stress
     std::vector<std::array<EP_FLOAT, 3>> Sigma;
+    std::vector<EP_FLOAT> deltaP;
+    std::vector<EP_FLOAT> tauInfty;
+    std::vector<EP_FLOAT> Keff;
+    std::vector<std::array<EP_FLOAT, 3>> Geff;
 
-    void ComputeSigma(const EP_FLOAT loadValue, const std::array<EP_INT, 3>& loadType);
+    void ComputeSigma(const EP_FLOAT loadValue, const std::array<EP_FLOAT, 3>& loadType);
 
     SigmaCalc() = delete;
     explicit SigmaCalc(std::unique_ptr<InputData> inp_);
@@ -47,6 +50,8 @@ namespace EFF_PROPS {
     void ComputeDivergence(const std::vector<std::vector<EP_FLOAT>>& Ax,
                            const std::vector<std::vector<EP_FLOAT>>& Ay,
                            std::vector<std::vector<EP_FLOAT>>& divA) const;
+    void SetMaterials();
+    void SetPressure(EP_FLOAT coh);
   };
 
 } // namespace
